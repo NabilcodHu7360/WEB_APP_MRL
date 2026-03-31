@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+colorwheel_output/
+colorwheel_temp/
+segmentation_output/
+voronoi_outputs/
+uploads/
+results/

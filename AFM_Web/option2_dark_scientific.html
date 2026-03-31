@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFM Tool — Option 2: Dark Scientific</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0e17;
+  --surface:   #111827;
+  --surface2:  #1a2236;
+  --border:    #1e2d45;
+  --accent:    #00d4ff;
+  --accent2:   #7c3aed;
+  --green:     #00ff9d;
+  --yellow:    #ffd60a;
+  --text:      #e2e8f0;
+  --muted:     #4a6280;
+  --mono:      'JetBrains Mono', monospace;
+  --display:   'Rajdhani', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--mono); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* SCANLINE OVERLAY */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+}
+
+/* NAVBAR */
+.navbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.navbar::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+}
+.brand { font-family: var(--display); font-size: 1.15rem; font-weight: 700; letter-spacing: 0.05em; color: var(--text); display: flex; align-items: center; gap: 10px; }
+.brand-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse-dot 2s ease-in-out infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:0.5; transform:scale(1.4)} }
+.brand-sub { font-size: 0.62rem; font-family: var(--mono); color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-left: 4px; align-self: flex-end; margin-bottom: 1px; }
+.nav-right { display: flex; align-items: center; gap: 16px; }
+.sys-indicator { font-size: 0.68rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.sys-indicator::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: pulse-dot 1.5s ease-in-out infinite; }
+.nav-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 5px 12px; border-radius: 4px; font-family: var(--mono); font-size: 0.73rem; cursor: pointer; transition: all 0.2s; }
+.nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* STEP BAR */
+.step-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 32px;
+  display: flex; align-items: center;
+}
+.step { display: flex; align-items: center; gap: 8px; font-size: 0.72rem; font-weight: 500; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.step.active { color: var(--accent); }
+.step.done { color: var(--green); }
+.step-num {
+  width: 24px; height: 24px; border-radius: 4px;
+  border: 1px solid currentColor;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.68rem; font-weight: 700; flex-shrink: 0;
+}
+.step.active .step-num { background: rgba(0,212,255,0.1); box-shadow: 0 0 8px rgba(0,212,255,0.4); }
+.step.done .step-num { background: rgba(0,255,157,0.1); }
+.step-line { flex: 1; height: 1px; background: var(--border); margin: 0 14px; min-width: 30px; position: relative; }
+.step-line::after { content: '▶'; position: absolute; right: -5px; top: -7px; font-size: 0.55rem; color: var(--border); }
+.step-line.done { background: var(--green); }
+.step-line.done::after { color: var(--green); }
+
+/* MAIN */
+.main { max-width: 1280px; margin: 0 auto; padding: 24px 28px; }
+
+/* PANEL */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.panel::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  opacity: 0.6;
+}
+.panel-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface2);
+}
+.panel-title { font-family: var(--display); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.panel-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+.panel-body { padding: 18px; }
+
+/* UPLOAD */
+.upload-zone {
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 36px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(0,212,255,0.02);
+  position: relative;
+}
+.upload-zone:hover { border-color: var(--accent); background: rgba(0,212,255,0.05); box-shadow: 0 0 20px rgba(0,212,255,0.08); }
+.upload-icon { font-size: 2.4rem; color: var(--accent); display: block; margin-bottom: 10px; opacity: 0.7; }
+.upload-main { font-family: var(--display); font-size: 1rem; font-weight: 600; letter-spacing: 0.05em; color: var(--text); }
+.upload-sub { font-size: 0.73rem; color: var(--muted); margin-top: 4px; }
+.format-tags { display: flex; justify-content: center; gap: 6px; margin-top: 10px; }
+.ftag { background: var(--surface2); border: 1px solid var(--border); border-radius: 3px; padding: 2px 8px; font-size: 0.68rem; color: var(--muted); }
+
+/* CLASS BADGE */
+.class-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 4px; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+.conf-score { font-size: 0.75rem; color: var(--muted); margin-left: 10px; }
+
+/* PROB BARS */
+.prob-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.prob-lbl { font-size: 0.7rem; width: 68px; color: var(--muted); flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+.prob-track { flex: 1; height: 10px; background: var(--surface2); border-radius: 2px; overflow: hidden; border: 1px solid var(--border); }
+.prob-fill { height: 100%; background: var(--border); transition: width 0.7s ease; border-radius: 2px; }
+.prob-fill.top { background: linear-gradient(90deg, var(--accent), var(--accent2)); box-shadow: 0 0 6px rgba(0,212,255,0.4); }
+.prob-val { font-size: 0.68rem; color: var(--muted); width: 36px; text-align: right; }
+
+/* IMAGE FRAME */
+.img-frame { border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: #000; }
+.img-cap { font-size: 0.65rem; padding: 4px 10px; background: var(--surface2); border-top: 1px solid var(--border); color: var(--muted); }
+
+/* LEGEND */
+.legend { display: flex; gap: 16px; margin-bottom: 12px; }
+.leg-item { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--muted); }
+.leg-sw { width: 14px; height: 14px; border-radius: 2px; border: 1px solid #555; flex-shrink: 0; }
+
+/* TOOL BTNS */
+.tool-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+.tbtn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); padding: 6px 14px; border-radius: 4px; font-family: var(--mono); font-size: 0.73rem; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s; }
+.tbtn.active { background: rgba(0,212,255,0.12); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 8px rgba(0,212,255,0.15); }
+.tbtn:not(.active):hover { border-color: var(--muted); color: var(--text); }
+
+/* CANVAS AREA */
+.canvas-placeholder { width: 100%; height: 300px; background: #050810; border: 1px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.canvas-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px); background-size: 24px 24px; }
+.canvas-cross { position: absolute; width: 1px; height: 100%; background: rgba(0,212,255,0.1); left: 50%; }
+.canvas-cross2 { position: absolute; width: 100%; height: 1px; background: rgba(0,212,255,0.1); top: 50%; }
+
+/* STATUS */
+.status-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 4px; font-size: 0.78rem; border: 1px solid; }
+.status-bar.success { background: rgba(0,255,157,0.06); border-color: rgba(0,255,157,0.25); color: var(--green); }
+.status-bar.info { background: rgba(0,212,255,0.06); border-color: rgba(0,212,255,0.25); color: var(--accent); }
+
+/* METRICS */
+.metrics-tbl { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+.metrics-tbl tr { border-bottom: 1px solid var(--border); }
+.metrics-tbl tr:last-child { border: none; }
+.metrics-tbl td { padding: 7px 0; }
+.metrics-tbl td:first-child { color: var(--muted); text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.06em; }
+.metrics-tbl td:last-child { color: var(--accent); font-weight: 700; text-align: right; }
+
+/* GRID */
+.img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.img-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 5px; font-weight: 700; }
+
+/* RUN BTN */
+.run-btn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border: none; border-radius: 5px;
+  padding: 11px 32px; font-family: var(--display); font-size: 0.95rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  box-shadow: 0 0 20px rgba(0,212,255,0.25);
+  transition: all 0.2s;
+}
+.run-btn:hover { box-shadow: 0 0 30px rgba(0,212,255,0.4); transform: translateY(-1px); }
+.run-note { font-size: 0.73rem; color: var(--muted); margin-left: 14px; }
+
+/* DEMO TABS */
+.demo-tabs { display: flex; gap: 6px; margin-bottom: 22px; }
+.dtab { padding: 6px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; font-family: var(--mono); font-size: 0.73rem; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+.dtab.active { background: rgba(0,212,255,0.1); border-color: var(--accent); color: var(--accent); }
+.stage { display: none; }
+.stage.active { display: block; }
+
+/* AFM VISUAL */
+.afm-vis { width: 100%; height: 200px; background: radial-gradient(ellipse at 50% 50%, #0d1a2e 0%, #050810 100%); border-radius: 4px; position: relative; overflow: hidden; }
+.afm-dot { position: absolute; border-radius: 50%; background: radial-gradient(circle, #aaddff 0%, #2277bb 50%, transparent 100%); }
+
+/* RADIO */
+.radio-opt { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface2); margin-bottom: 8px; cursor: pointer; font-size: 0.8rem; transition: all 0.15s; }
+.radio-opt:hover { border-color: var(--muted); }
+.radio-opt.selected { border-color: var(--green); color: var(--green); background: rgba(0,255,157,0.05); }
+.radio-opt.selected2 { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.05); }
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    AFM Analysis
+    <span class="brand-sub">// nanoscale imaging</span>
+  </div>
+  <div class="nav-right">
+    <span class="sys-indicator">SYSTEM ONLINE</span>
+    <button class="nav-btn">⟳ New Job</button>
+  </div>
+</nav>
+
+<div class="step-bar">
+  <div class="step done"><div class="step-num"><i class="bi bi-check-lg"></i></div>Upload & Detect</div>
+  <div class="step-line done"></div>
+  <div class="step active"><div class="step-num">02</div>Review Mask</div>
+  <div class="step-line"></div>
+  <div class="step"><div class="step-num">03</div>Analysis</div>
+</div>
+
+<div class="main">
+
+  <div class="demo-tabs">
+    <button class="dtab active" onclick="showStage('upload', this)">▶ Stage: Upload & Edit</button>
+    <button class="dtab" onclick="showStage('results', this)">▶ Stage: Results</button>
+  </div>
+
+  <!-- UPLOAD STAGE -->
+  <div class="stage active" id="stage-upload">
+    <div style="display:grid; grid-template-columns:1fr 1.35fr; gap:18px;">
+
+      <!-- LEFT -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-dot"></div><span class="panel-title">Input Image</span></div>
+          <div class="panel-body">
+            <div class="upload-zone">
+              <i class="bi bi-cloud-arrow-up upload-icon"></i>
+              <div class="upload-main">Drop AFM Image Here</div>
+              <div class="upload-sub">or click to browse</div>
+              <div class="format-tags"><span class="ftag">.jpg</span><span class="ftag">.png</span><span class="ftag">.tiff</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><div class="panel-dot"></div><span class="panel-title">CNN Classification</span></div>
+          <div class="panel-body">
+            <div style="display:flex; align-items:center; margin-bottom:14px;">
+              <span class="class-badge"><i class="bi bi-cpu"></i> DOTS</span>
+              <span class="conf-score">94.2% confidence</span>
+            </div>
+            <div>
+              <div class="prob-row"><span class="prob-lbl">dots</span><div class="prob-track"><div class="prob-fill top" style="width:94%"></div></div><span class="prob-val">94.2%</span></div>
+              <div class="prob-row"><span class="prob-lbl">mixed</span><div class="prob-track"><div class="prob-fill" style="width:4%"></div></div><span class="prob-val">3.8%</span></div>
+              <div class="prob-row"><span class="prob-lbl">lines</span><div class="prob-track"><div class="prob-fill" style="width:1%"></div></div><span class="prob-val">1.2%</span></div>
+              <div class="prob-row"><span class="prob-lbl">irregular</span><div class="prob-track"><div class="prob-fill" style="width:1%"></div></div><span class="prob-val">0.8%</span></div>
+            </div>
+            <div style="margin-top:16px;">
+              <div class="img-label">Original Image</div>
+              <div class="afm-vis"><div id="dots-left"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div>
+        <div class="panel" style="margin-bottom:16px;">
+          <div class="panel-header"><div class="panel-dot"></div><span class="panel-title">U-Net Segmentation Mask</span></div>
+          <div class="panel-body">
+            <p style="font-size:0.76rem; color:var(--muted); line-height:1.65; margin-bottom:14px;">
+              Automatic segmentation complete. <span style="color:var(--text);">White regions</span> = detected features. <span style="color:var(--text);">Black</span> = background.
+              Verify the mask — edit if features are missing or incorrectly included.
+            </p>
+
+            <div class="img-frame" style="margin-bottom:14px;">
+              <div style="width:100%; height:190px; background:radial-gradient(circle at 25% 35%, white 8px, transparent 8px), radial-gradient(circle at 55% 25%, white 10px, transparent 10px), radial-gradient(circle at 72% 60%, white 6px, transparent 6px), radial-gradient(circle at 18% 68%, white 9px, transparent 9px), radial-gradient(circle at 45% 50%, white 11px, transparent 11px), radial-gradient(circle at 80% 30%, white 7px, transparent 7px), radial-gradient(circle at 35% 75%, white 8px, transparent 8px), #000;"></div>
+              <div class="img-cap">unet_mask_preview.png · 512×512</div>
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <p style="font-size:0.76rem; font-weight:600; color:var(--text); margin-bottom:8px; text-transform: uppercase; letter-spacing: 0.06em;">Proceed with mask?</p>
+              <div class="radio-opt selected" onclick="selectOpt(this, 'selected')">
+                <i class="bi bi-play-circle"></i> Use mask as-is — run analysis now
+              </div>
+              <div class="radio-opt" onclick="selectOpt(this, 'selected2')">
+                <i class="bi bi-pencil-square"></i> Open editor to correct the mask
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><div class="panel-dot" style="background:var(--accent2)"></div><span class="panel-title" style="color:var(--accent2)">Mask Editor</span></div>
+          <div class="panel-body">
+            <div class="legend">
+              <div class="leg-item"><div class="leg-sw" style="background:#fff;"></div> White = draw features</div>
+              <div class="leg-item"><div class="leg-sw" style="background:#111; border-color:var(--accent)"></div> Black = erase features</div>
+            </div>
+            <div class="tool-row">
+              <button class="tbtn active"><i class="bi bi-brush"></i> Draw (white)</button>
+              <button class="tbtn"><i class="bi bi-eraser"></i> Erase (black)</button>
+              <div style="flex:1; display:flex; align-items:center; gap:8px; margin-left:10px;">
+                <span style="font-size:0.68rem; color:var(--muted); white-space:nowrap;">Brush px:</span>
+                <input type="range" min="2" max="40" value="10" style="flex:1; accent-color:var(--accent);">
+                <span style="font-size:0.68rem; color:var(--accent); min-width:24px;">10</span>
+              </div>
+            </div>
+            <div class="canvas-placeholder">
+              <div class="canvas-grid"></div>
+              <div class="canvas-cross"></div>
+              <div class="canvas-cross2"></div>
+              <span style="position:relative; z-index:1; font-size:0.75rem; color:var(--muted); text-align:center;">
+                <i class="bi bi-pencil-square" style="display:block; font-size:1.4rem; margin-bottom:6px; color:var(--accent2); opacity:0.6;"></i>
+                DashCanvas renders here<br>
+                <span style="font-size:0.65rem; opacity:0.6;">512 × 512 px</span>
+              </span>
+            </div>
+            <p style="font-size:0.68rem; color:var(--muted); margin-top:8px;">
+              ↳ 0 strokes recorded. Draw on the mask to correct segmentation errors.
+            </p>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; padding:16px 0;">
+          <button class="run-btn"><i class="bi bi-play-fill"></i> Execute Analysis</button>
+          <span class="run-note">// ~10–30s depending on image dimensions</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS STAGE -->
+  <div class="stage" id="stage-results">
+    <div class="status-bar success" style="margin-bottom:18px;">
+      <i class="bi bi-check-circle-fill"></i>
+      ANALYSIS COMPLETE — DOTS class · Voronoi + nearest-neighbour analysis applied
+    </div>
+
+    <div style="display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid rgba(0,212,255,0.2); border-radius:6px; padding:12px 18px; margin-bottom:18px;">
+      <span class="class-badge">DOTS</span>
+      <span style="font-size:0.76rem; color:var(--muted);">94.2% confidence · cnn_rgb_classifier.pth · best_quality_unet.pt</span>
+    </div>
+
+    <div class="panel" style="margin-bottom:18px;">
+      <div class="panel-header"><div class="panel-dot"></div><span class="panel-title">Image Outputs</span></div>
+      <div class="panel-body">
+        <div class="img-grid">
+          <div><div class="img-label">Original</div><div class="img-frame"><div class="afm-vis" style="height:160px;"><div id="dots-res"></div></div><div class="img-cap">sample_001.tiff</div></div></div>
+          <div><div class="img-label">Final Mask</div><div class="img-frame"><div style="height:160px;background:radial-gradient(circle at 25% 35%, white 8px, transparent 8px), radial-gradient(circle at 55% 25%, white 10px, transparent 10px), radial-gradient(circle at 75% 65%, white 6px, transparent 6px), #000;"></div><div class="img-cap">unet_mask_final.png</div></div></div>
+          <div><div class="img-label">Voronoi Overlay</div><div class="img-frame"><div style="height:160px;background:radial-gradient(circle at 25% 35%, white 8px, transparent 8px), radial-gradient(circle at 55% 25%, white 10px, transparent 10px), #000; position:relative;"><div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(0,212,255,0.06) 20px,rgba(0,212,255,0.06) 21px);"></div></div><div class="img-cap">voronoi_overlay.png</div></div></div>
+          <div><div class="img-label">NN Histogram</div><div class="img-frame"><div style="height:160px;background:var(--surface);display:flex;align-items:flex-end;padding:10px 12px;gap:4px;">
+            <div style="flex:1;background:rgba(0,212,255,0.2);height:25%;border-radius:2px 2px 0 0;"></div>
+            <div style="flex:1;background:rgba(0,212,255,0.4);height:50%;border-radius:2px 2px 0 0;"></div>
+            <div style="flex:1;background:rgba(0,212,255,0.7);height:85%;border-radius:2px 2px 0 0;"></div>
+            <div style="flex:1;background:var(--accent);height:100%;border-radius:2px 2px 0 0;box-shadow:0 0 8px rgba(0,212,255,0.5);"></div>
+            <div style="flex:1;background:rgba(0,212,255,0.7);height:70%;border-radius:2px 2px 0 0;"></div>
+            <div style="flex:1;background:rgba(0,212,255,0.4);height:35%;border-radius:2px 2px 0 0;"></div>
+            <div style="flex:1;background:rgba(0,212,255,0.2);height:12%;border-radius:2px 2px 0 0;"></div>
+          </div><div class="img-cap">nn_histogram.png</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px;">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-dot"></div><span class="panel-title">Analysis Metrics</span></div>
+        <div class="panel-body">
+          <table class="metrics-tbl">
+            <tr><td>Detected dots</td><td>47</td></tr>
+            <tr><td>Mean NN distance</td><td>38.4 nm</td></tr>
+            <tr><td>Std NN distance</td><td>5.2 nm</td></tr>
+            <tr><td>Packing fraction</td><td>0.412</td></tr>
+            <tr><td>Circularity (mean)</td><td>0.89</td></tr>
+            <tr><td>Voronoi regularity</td><td>0.76</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-dot" style="background:var(--muted)"></div><span class="panel-title" style="color:var(--muted)">Job Details</span></div>
+        <div class="panel-body">
+          <table class="metrics-tbl">
+            <tr><td>CNN model</td><td style="color:var(--text); font-size:0.68rem;">cnn_rgb_classifier.pth</td></tr>
+            <tr><td>U-Net model</td><td style="color:var(--text); font-size:0.68rem;">best_quality_unet.pt</td></tr>
+            <tr><td>Job ID</td><td style="color:var(--text); font-size:0.68rem;">job_20240912_143201</td></tr>
+            <tr><td>Results</td><td style="color:var(--text); font-size:0.68rem;">results/job_20240912/</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px;">
+      <button class="run-btn" style="background:var(--surface2); box-shadow:none; border:1px solid var(--border); color:var(--muted); font-size:0.82rem; padding:9px 20px;"><i class="bi bi-arrow-counterclockwise"></i> New Job</button>
+      <button class="run-btn" style="font-size:0.82rem; padding:9px 20px;"><i class="bi bi-download"></i> Export</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function makeDots(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  for (let i = 0; i < 28; i++) {
+    const d = document.createElement('div');
+    d.className = 'afm-dot';
+    d.style.left = (Math.random() * 85 + 5) + '%';
+    d.style.top  = (Math.random() * 75 + 10) + '%';
+    const s = 8 + Math.random() * 14;
+    d.style.width = s + 'px'; d.style.height = s + 'px';
+    d.style.opacity = 0.5 + Math.random() * 0.4;
+    el.appendChild(d);
+  }
+}
+makeDots('dots-left'); makeDots('dots-res');
+
+function showStage(name, btn) {
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.dtab').forEach(t => t.classList.remove('active'));
+  document.getElementById('stage-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function selectOpt(el, cls) {
+  el.parentElement.querySelectorAll('.radio-opt').forEach(o => { o.classList.remove('selected','selected2'); });
+  el.classList.add(cls);
+}
+
+document.querySelectorAll('.tbtn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    this.closest('.tool-row').querySelectorAll('.tbtn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
